@@ -1,6 +1,8 @@
 #include "g_local.h"
 
 
+		//ROCCO REVIEW NOTES - Is everything for the new weapons and such accounted for in here?
+
 qboolean	Pickup_Weapon (edict_t *ent, edict_t *other);
 qboolean	Pickup_Axe (edict_t *ent, edict_t *other);
 qboolean	Pickup_Hammer (edict_t *ent, edict_t *other);

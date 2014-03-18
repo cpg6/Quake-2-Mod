@@ -1797,6 +1797,12 @@ void Weapon_BFG (edict_t *ent)
 }
 
 
+
+
+
+		//ROCCO REVIEW NOTES - Do you have Messages of Death for all of these?
+		//ROCCO REVIEW NOTES - Also, most of these weapons seem very unbalanced, consider balancing them out for better gameplay.
+
 /*
 =====================================================================
 
@@ -2149,6 +2155,9 @@ void Fire_Wand (edict_t *ent)
 		VectorSet(offset, 0, r, u + ent->viewheight-8);
 		P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
 
+
+
+ 
 		fire_wand (ent, start, forward, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_CHAINGUN);
 	}
 

@@ -1489,6 +1489,10 @@ void fire_bloodscourge (edict_t *self, vec3_t start, vec3_t dir, int damage, int
 	gi.linkentity (rocket);
 }
 
+		//ROCCO REVIEW NOTES - I'm guessing you have to add more weapons?
+
+
+
 /*
 =============================================
 

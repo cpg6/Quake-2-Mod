@@ -699,6 +699,10 @@ void Use_Weapon (edict_t *ent, gitem_t *item)
 			return;
 		}
 	}
+	
+	//ROCCO REVIEW NOTES - This next restriction is only here for one weapon
+	
+	
 	//////////////////////////////////////////////////////////////
 	if (item == FindItem("Axe") && ent->client->resp.pclass != Warrior)	
 		return;

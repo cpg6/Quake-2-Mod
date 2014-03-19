@@ -148,8 +148,7 @@ qboolean Pickup_Axe (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 8;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -196,8 +195,7 @@ qboolean Pickup_Hammer (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 9;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -244,8 +242,7 @@ qboolean Pickup_Quietus (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 10;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -292,8 +289,7 @@ qboolean Pickup_Wand (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 11;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -340,8 +336,7 @@ qboolean Pickup_Arc (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 13;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -388,8 +383,7 @@ qboolean Pickup_Shards (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 12;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -436,8 +430,7 @@ qboolean Pickup_BloodScourge (edict_t *ent, edict_t *other)
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 14;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -479,13 +472,59 @@ qboolean Pickup_BloodScourge (edict_t *ent, edict_t *other)
 	return true;
 }
 
-qboolean Pickup_Whirl (edict_t *ent, edict_t *other)
+qboolean Pickup_ShockWave (edict_t *ent, edict_t *other)
 {
 	int			index;
 	gitem_t		*ammo;
 
-	index = ITEM_INDEX(ent->item);
-	gi.dprintf("%i\n",index);
+	index = 15;
+
+	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
+		&& other->client->pers.inventory[index])
+	{
+		if (!(ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM) ) )
+			return false;	// leave the weapon for others to pickup
+	}
+
+	other->client->pers.inventory[index]++;
+
+	if (!(ent->spawnflags & DROPPED_ITEM) )
+	{
+		// give them some ammo with it
+		ammo = FindItem (ent->item->ammo);
+		if ( (int)dmflags->value & DF_INFINITE_AMMO )
+			Add_Ammo (other, ammo, 1000);
+		else
+			Add_Ammo (other, ammo, ammo->quantity);
+
+		if (! (ent->spawnflags & DROPPED_PLAYER_ITEM) )
+		{
+			if (deathmatch->value)
+			{
+				if ((int)(dmflags->value) & DF_WEAPONS_STAY)
+					ent->flags |= FL_RESPAWN;
+				else
+					SetRespawn (ent, 30);
+			}
+			if (coop->value)
+				ent->flags |= FL_RESPAWN;
+		}
+	}
+
+	if (other->client->pers.weapon != ent->item && 
+		(other->client->pers.inventory[index] == 1) &&
+		( !deathmatch->value || other->client->pers.weapon == FindItem("blaster") ) )
+		other->client->newweapon = ent->item;
+
+	return true;
+}
+
+qboolean Pickup_KoraxsFury (edict_t *ent, edict_t *other)
+{
+	int			index;
+	gitem_t		*ammo;
+
+	index = 16;
 
 	if ( ( ((int)(dmflags->value) & DF_WEAPONS_STAY) || coop->value) 
 		&& other->client->pers.inventory[index])
@@ -699,9 +738,63 @@ void Use_Weapon (edict_t *ent, gitem_t *item)
 			return;
 		}
 	}
-	//////////////////////////////////////////////////////////////
+	//ROCCO REVIEW NOTES - This next restriction is only here for one weapon
+	//
+
+	// Warrior weapon class restrictions
+
 	if (item == FindItem("Axe") && ent->client->resp.pclass != Warrior)	
+	{
+		gi.centerprintf(ent,"You are not a Warrior!");
 		return;
+	}
+	if (item == FindItem("Hammer") && ent->client->resp.pclass != Warrior)	
+	{
+		gi.centerprintf(ent,"You are not a Warrior!");
+		return;
+	}
+	if (item == FindItem("Quietus") && ent->client->resp.pclass != Warrior)	
+	{
+		gi.centerprintf(ent,"You are not a Warrior!");
+		return;
+	}
+
+	// Mage Weapon Restrictions
+
+	if (item == FindItem("Sapphire Wand") && ent->client->resp.pclass != Mage)	
+	{
+		gi.centerprintf(ent,"You are not a Mage!");
+		return;
+	}
+	if (item == FindItem("Frost Shards") && ent->client->resp.pclass != Mage)	
+	{
+		gi.centerprintf(ent,"You are not a Mage!");
+		return;
+	}
+	if (item == FindItem("Arc of Death") && ent->client->resp.pclass != Mage)	
+	{
+		gi.centerprintf(ent,"You are not a Mage!");
+		return;
+	}
+	if (item == FindItem("BloodScourge") && ent->client->resp.pclass != Mage)	
+	{
+		gi.centerprintf(ent,"You are not a Mage!");
+		return;
+	}
+
+	// Demon Weapon Restrictions
+	
+	if (item == FindItem("Shockwave") && ent->client->resp.pclass != Demon)	
+	{
+		gi.centerprintf(ent,"You are not a Demon!");
+		return;
+	}
+	if (item == FindItem("KoraxsFury") && ent->client->resp.pclass != Demon)	
+	{
+		gi.centerprintf(ent,"You are not a Demon!");
+		return;
+	}
+	
 	// change to this weapon when down
 	ent->client->newweapon = item;
 }
@@ -2396,19 +2489,139 @@ void Weapon_BloodScourge (edict_t *ent)
 
 =====================================================================
 
-Whirl
+ShockWave
 
 =====================================================================
 
 */
+void Fire_ShockWave (edict_t *ent)
+{
+	vec3_t		start;
+	vec3_t		forward, right;
+	vec3_t		offset;
+	int			damage;
+	int			kick;
+	int			i;
 
+	if (deathmatch->value)
+	{
+		damage = 25;
+		kick = 200;
+	}
+	else
+	{
+		damage = 5;
+		kick = 250;
+	}
+
+	if (is_quad)
+	{
+		damage *= 4;
+		kick *= 4;
+	}
+	for (i = 25; i < 175 ; i +=25)
+	{
+		ent->client->v_angle[0] += i;
+		AngleVectors (ent->client->v_angle, forward, right, NULL);
+		VectorScale (forward, -2, ent->client->kick_origin);
+		ent->client->kick_angles[0] = -1;
+		VectorSet(offset, 0, 7,  ent->viewheight-8);
+		P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+		fire_shockwave (ent, start, forward, damage, 1100, 150, 25);	
+	}
+
+	// send muzzle flash
+	gi.WriteByte (svc_muzzleflash);
+	gi.WriteShort (ent-g_edicts);
+	gi.WriteByte (MZ_RAILGUN | is_silenced);
+	gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+	ent->client->ps.gunframe++;
+	PlayerNoise(ent, start, PNOISE_WEAPON);
+
+	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
+		ent->client->pers.inventory[ent->client->ammo_index]--;
+}
+
+
+void Weapon_ShockWave (edict_t *ent)
+{
+	static int	pause_frames[]	= {56, 0};
+	static int	fire_frames[]	= {4, 0};
+
+	Weapon_Generic (ent, 3, 18, 56, 61, pause_frames, fire_frames, Fire_ShockWave);
+}
 /*
 
 =====================================================================
 
-Disintegrate
+Korax's Fury
 
 =====================================================================
 
 */
 
+void Fire_KoraxsFury (edict_t *ent)
+{
+	vec3_t	offset, start;
+	vec3_t	forward, right;
+	int		damage;
+	float	damage_radius = 50;
+	int		radius		=	25;
+	int		radius_damage = 25;
+
+	if (deathmatch->value)
+		damage = 20;
+	else
+		damage = 10;
+
+	if (ent->client->ps.gunframe == 9)
+	{
+		gi.WriteByte (svc_muzzleflash);
+		gi.WriteShort (ent-g_edicts);
+		gi.WriteByte (MZ_BFG | is_silenced);
+		gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+		ent->client->ps.gunframe++;
+
+		PlayerNoise(ent, start, PNOISE_WEAPON);
+		return;
+	}
+	if (ent->client->pers.inventory[ent->client->ammo_index] < 50)
+	{
+		ent->client->ps.gunframe++;
+		return;
+	}
+	if (is_quad)
+		damage *= 4;
+
+	AngleVectors (ent->client->v_angle, forward, right, NULL);
+	VectorScale (forward, -2, ent->client->kick_origin);
+
+	ent->client->v_dmg_pitch = -40;
+	ent->client->v_dmg_roll = crandom()*8;
+	ent->client->v_dmg_time = level.time + DAMAGE_TIME;
+
+	VectorSet(offset, 8, 8, ent->viewheight-8);
+	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+
+	fire_koraxsfury (ent, start, forward, damage, 1200, damage_radius);
+	fire_bloodscourge (ent, start, forward, damage, 1200, damage_radius, radius_damage);
+	fire_shockwave (ent, start, forward, damage, 1200, 150, 25);
+	fire_arc (ent, start, forward, damage, 1200, 2.5, radius);
+
+	ent->client->ps.gunframe++;
+
+	PlayerNoise(ent, start, PNOISE_WEAPON);
+
+	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
+		ent->client->pers.inventory[ent->client->ammo_index] -= 50;
+}
+
+void Weapon_KoraxsFury (edict_t *ent)
+{
+	static int	pause_frames[]	= {39, 45, 50, 55, 0};
+	static int	fire_frames[]	= {9, 17, 0};
+
+	Weapon_Generic (ent, 8, 32, 55, 58, pause_frames, fire_frames, Fire_KoraxsFury);
+}

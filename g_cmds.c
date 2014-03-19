@@ -1,7 +1,6 @@
 #include "g_local.h"
 #include "m_player.h"
 
-
 char *ClientTeam (edict_t *ent)
 {
 	char		*p;
@@ -848,6 +847,8 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 		}
 		gi.cprintf(other, PRINT_CHAT, "%s", text);
 	}
+
+
 }
 
 void Cmd_PlayerList_f(edict_t *ent)
@@ -880,7 +881,25 @@ void Cmd_PlayerList_f(edict_t *ent)
 	gi.cprintf(ent, PRINT_HIGH, "%s", text);
 }
 
+void Cmd_Rejuv (edict_t *self)																		
+{
+	if (!self->client)																				
+		return;																						
 
+	if (self->client->pers.rejuv <= 0)																
+	{
+		gi.centerprintf(self, "No Rejuvination Pots Left\n");													
+		return;																						
+	}
+
+	if ( deathmatch->value && ((int)dmflags->value & DF_NO_HEALTH) )
+	{
+		G_FreeEdict (self);
+		return;
+	}
+	self->client->pers.health = self->client->pers.health + 25;
+	self->client->pers.rejuv--;																	
+}
 /*
 =================
 ClientCommand
@@ -974,6 +993,8 @@ void ClientCommand (edict_t *ent)
 		Cmd_Class_f(ent, cmd);						//Warrior, mage, and demon  
 	else if (Q_stricmp(cmd, "playerlist") == 0)
 		Cmd_PlayerList_f(ent);
+	else if (Q_stricmp(cmd, "rejuv") == 0)
+		Cmd_Rejuv (ent);
 	else	// anything that doesn't match a command will be a chat
 		Cmd_Say_f (ent, false, true);
 }

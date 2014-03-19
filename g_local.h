@@ -218,7 +218,8 @@ typedef struct
 #define WEAP_ARCOFDEATH			16
 #define WEAP_FROSTSHARDS		17
 #define WEAP_BLOODSCOURGE		18
-#define WEAP_WHIRL				19
+#define WEAP_SHOCKWAVE			19
+#define WEAP_KORAXSFURY			20
 
 typedef struct gitem_s
 {
@@ -844,6 +845,8 @@ typedef struct
 	int			max_grenades;
 	int			max_cells;
 	int			max_slugs;
+
+	int			rejuv;
 
 	gitem_t		*weapon;
 	gitem_t		*lastweapon;

@@ -1488,19 +1488,300 @@ void fire_bloodscourge (edict_t *self, vec3_t start, vec3_t dir, int damage, int
 
 	gi.linkentity (rocket);
 }
+//ROCCO REVIEW NOTES - I'm guessing you have to add more weapons?
+//RESPONSE: Yea missing 2, good catch
+
 
 /*
 =============================================
 
-BloodScourge
+ShockWave
 
 =============================================
 */
+void shockwave_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
+{
+	vec3_t		origin;
+	int			n;
 
+	if (other == ent->owner)
+		return;
+
+	if (surf && (surf->flags & SURF_SKY))
+	{
+		G_FreeEdict (ent);
+		return;
+	}
+
+	if (ent->owner->client)
+		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+
+	// calculate position for the explosion entity
+	VectorMA (ent->s.origin, -0.02, ent->velocity, origin);
+
+	if (other->takedamage)
+	{
+		T_Damage (other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, 0, MOD_ROCKET);
+	}
+	else
+	{
+		// don't throw any debris in net games
+		if (!deathmatch->value && !coop->value)
+		{
+			if ((surf) && !(surf->flags & (SURF_WARP|SURF_TRANS33|SURF_TRANS66|SURF_FLOWING)))
+			{
+				n = rand() % 5;
+				while(n--)
+					ThrowDebris (ent, "models/objects/debris2/tris.md2", 2, ent->s.origin);
+			}
+		}
+	}
+
+	T_RadiusDamage(ent, ent->owner, ent->radius_dmg, other, ent->dmg_radius, MOD_R_SPLASH);
+
+	gi.WriteByte (svc_temp_entity);
+	if (ent->waterlevel)
+		gi.WriteByte (TE_ROCKET_EXPLOSION_WATER);
+	else
+		gi.WriteByte (TE_ROCKET_EXPLOSION);
+	gi.WritePosition (origin);
+	gi.multicast (ent->s.origin, MULTICAST_PHS);
+
+	G_FreeEdict (ent);
+}
+
+void fire_shockwave (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
+{
+	edict_t	*rocket;
+
+	rocket = G_Spawn();
+	VectorCopy (start, rocket->s.origin);
+	VectorCopy (dir, rocket->movedir);
+	vectoangles (dir, rocket->s.angles);
+	VectorScale (dir, speed, rocket->velocity);
+	rocket->movetype = MOVETYPE_FLYMISSILE;
+	rocket->clipmask = MASK_SHOT;
+	rocket->solid = SOLID_BBOX;
+	rocket->s.effects |= EF_ROCKET;
+	VectorClear (rocket->mins);
+	VectorClear (rocket->maxs);
+	rocket->s.modelindex = gi.modelindex ("models/objects/rocket/tris.md2");
+	rocket->owner = self;
+	rocket->touch = shockwave_touch;
+	rocket->nextthink = level.time + 8000/speed;
+	rocket->think = G_FreeEdict;
+	rocket->dmg = damage;
+	rocket->radius_dmg = radius_damage;
+	rocket->dmg_radius = damage_radius;
+	rocket->s.sound = gi.soundindex ("weapons/rockfly.wav");
+	rocket->classname = "rocket";
+
+	if (self->client)
+		check_dodge (self, rocket->s.origin, dir, speed);
+
+	gi.linkentity (rocket);
+}
 /*
 =============================================
 
-BloodScourge
+Korax's Fury
 
 =============================================
 */
+
+void korax_explode (edict_t *self)
+{
+	edict_t	*ent;
+	float	points;
+	vec3_t	v;
+	float	dist;
+
+	if (self->s.frame == 0)
+	{
+		// the BFG effect
+		ent = NULL;
+		while ((ent = findradius(ent, self->s.origin, self->dmg_radius)) != NULL)
+		{
+			if (!ent->takedamage)
+				continue;
+			if (ent == self->owner)
+				continue;
+			if (!CanDamage (ent, self))
+				continue;
+			if (!CanDamage (ent, self->owner))
+				continue;
+
+			VectorAdd (ent->mins, ent->maxs, v);
+			VectorMA (ent->s.origin, 0.5, v, v);
+			VectorSubtract (self->s.origin, v, v);
+			dist = VectorLength(v);
+			points = self->radius_dmg * (1.0 - sqrt(dist/self->dmg_radius));
+			if (ent == self->owner)
+				points = points * 0.5;
+
+			gi.WriteByte (svc_temp_entity);
+			gi.WriteByte (TE_BFG_EXPLOSION);
+			gi.WritePosition (ent->s.origin);
+			gi.multicast (ent->s.origin, MULTICAST_PHS);
+			T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
+		}
+	}
+
+	self->nextthink = level.time + FRAMETIME;
+	self->s.frame++;
+	if (self->s.frame == 5)
+		self->think = G_FreeEdict;
+}
+
+void korax_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+{
+	if (other == self->owner)
+		return;
+
+	if (surf && (surf->flags & SURF_SKY))
+	{
+		G_FreeEdict (self);
+		return;
+	}
+
+	if (self->owner->client)
+		PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+
+	// core explosion - prevents firing it into the wall/floor
+	if (other->takedamage)
+		T_Damage (other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, 0, MOD_BFG_BLAST);
+	T_RadiusDamage(self, self->owner, 200, other, 100, MOD_BFG_BLAST);
+
+	gi.sound (self, CHAN_VOICE, gi.soundindex ("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
+	self->solid = SOLID_NOT;
+	self->touch = NULL;
+	VectorMA (self->s.origin, -1 * FRAMETIME, self->velocity, self->s.origin);
+	VectorClear (self->velocity);
+	self->s.modelindex = gi.modelindex ("sprites/s_bfg3.sp2");
+	self->s.frame = 0;
+	self->s.sound = 0;
+	self->s.effects &= ~EF_ANIM_ALLFAST;
+	self->think = korax_explode;
+	self->nextthink = level.time + FRAMETIME;
+	self->enemy = other;
+
+	gi.WriteByte (svc_temp_entity);
+	gi.WriteByte (TE_BFG_BIGEXPLOSION);
+	gi.WritePosition (self->s.origin);
+	gi.multicast (self->s.origin, MULTICAST_PVS);
+}
+
+
+void korax_think (edict_t *self)
+{
+	edict_t	*ent;
+	edict_t	*ignore;
+	vec3_t	point;
+	vec3_t	dir;
+	vec3_t	start;
+	vec3_t	end;
+	int		dmg;
+	trace_t	tr;
+
+	if (deathmatch->value)
+		dmg = 5;
+	else
+		dmg = 10;
+
+	ent = NULL;
+	while ((ent = findradius(ent, self->s.origin, 256)) != NULL)
+	{
+		if (ent == self)
+			continue;
+
+		if (ent == self->owner)
+			continue;
+
+		if (!ent->takedamage)
+			continue;
+
+		if (!(ent->svflags & SVF_MONSTER) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
+			continue;
+
+		VectorMA (ent->absmin, 0.5, ent->size, point);
+
+		VectorSubtract (point, self->s.origin, dir);
+		VectorNormalize (dir);
+
+		ignore = self;
+		VectorCopy (self->s.origin, start);
+		VectorMA (start, 2048, dir, end);
+		while(1)
+		{
+			tr = gi.trace (start, NULL, NULL, end, ignore, CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_DEADMONSTER);
+
+			if (!tr.ent)
+				break;
+
+			// hurt it if we can
+			if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
+				T_Damage (tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+
+			// if we hit something that's not a monster or player we're done
+			if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
+			{
+				gi.WriteByte (svc_temp_entity);
+				gi.WriteByte (TE_LASER_SPARKS);
+				gi.WriteByte (4);
+				gi.WritePosition (tr.endpos);
+				gi.WriteDir (tr.plane.normal);
+				gi.WriteByte (self->s.skinnum);
+				gi.multicast (tr.endpos, MULTICAST_PVS);
+				break;
+			}
+
+			ignore = tr.ent;
+			VectorCopy (tr.endpos, start);
+		}
+
+		gi.WriteByte (svc_temp_entity);
+		gi.WriteByte (TE_BFG_LASER);
+		gi.WritePosition (self->s.origin);
+		gi.WritePosition (tr.endpos);
+		gi.multicast (self->s.origin, MULTICAST_PHS);
+	}
+
+	self->nextthink = level.time + FRAMETIME;
+}
+
+
+void fire_koraxsfury (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius)
+{
+	edict_t	*bfg;
+
+	bfg = G_Spawn();
+	VectorCopy (start, bfg->s.origin);
+	VectorCopy (dir, bfg->movedir);
+	vectoangles (dir, bfg->s.angles);
+	VectorScale (dir, speed, bfg->velocity);
+	bfg->movetype = MOVETYPE_FLYMISSILE;
+	bfg->clipmask = MASK_SHOT;
+	bfg->solid = SOLID_BBOX;
+	bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
+	VectorClear (bfg->mins);
+	VectorClear (bfg->maxs);
+	bfg->s.modelindex = gi.modelindex ("sprites/s_bfg1.sp2");
+	bfg->owner = self;
+	bfg->touch = korax_touch;
+	bfg->nextthink = level.time + 8000/speed;
+	bfg->think = G_FreeEdict;
+	bfg->radius_dmg = damage;
+	bfg->dmg_radius = damage_radius;
+	bfg->classname = "bfg blast";
+	bfg->s.sound = gi.soundindex ("weapons/bfg__l1a.wav");
+
+	bfg->think = korax_think;
+	bfg->nextthink = level.time + FRAMETIME;
+	bfg->teammaster = bfg;
+	bfg->teamchain = NULL;
+
+	if (self->client)
+		check_dodge (self, bfg->s.origin, dir, speed);
+
+	gi.linkentity (bfg);
+}

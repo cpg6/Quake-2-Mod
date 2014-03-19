@@ -1,5 +1,7 @@
 #include "g_local.h"
 
+//ROCCO REVIEW NOTES - Is everything for the new weapons and such accounted for in here?
+//RESPONSE - Good Find, not all has been put in. Rest will be put in.
 
 qboolean	Pickup_Weapon (edict_t *ent, edict_t *other);
 qboolean	Pickup_Axe (edict_t *ent, edict_t *other);
@@ -9,7 +11,8 @@ qboolean	Pickup_Wand (edict_t *ent, edict_t *other);
 qboolean	Pickup_Arc (edict_t *ent, edict_t *other);
 qboolean	Pickup_Shards (edict_t *ent, edict_t *other);
 qboolean	Pickup_BloodScourge (edict_t *ent, edict_t *other);
-qboolean	Pickup_Whirl (edict_t *ent, edict_t *other);
+qboolean	Pickup_ShockWave (edict_t *ent, edict_t *other);
+qboolean	Pickup_KoraxsFury (edict_t *ent, edict_t *other);
 void		Use_Weapon (edict_t *ent, gitem_t *inv);
 void		Drop_Weapon (edict_t *ent, gitem_t *inv);
 
@@ -32,10 +35,9 @@ void Weapon_Wand (edict_t *ent);
 void Weapon_ArcOfDeath (edict_t *ent);
 void Weapon_Shards (edict_t *ent);
 void Weapon_BloodScourge (edict_t *ent);
-void Weapon_Whirl (edict_t *ent);
-/*
-void Weapon_Disintegrate (edict_t *ent);
-*/
+void Weapon_ShockWave (edict_t *ent);
+void Weapon_KoraxsFury (edict_t *ent);
+
 gitem_armor_t jacketarmor_info	= { 25,  50, .30, .00, ARMOR_JACKET};
 gitem_armor_t combatarmor_info	= { 50, 100, .60, .30, ARMOR_COMBAT};
 gitem_armor_t bodyarmor_info	= {100, 200, .80, .60, ARMOR_BODY};
@@ -1505,62 +1507,76 @@ gitem_t	itemlist[] =
 
 // =====================================================
 
-//	Whirl
+//	Shockwave
 
 // =====================================================
 
 	{
-		"weapon_whirl", 
-		Pickup_Whirl,
+		"weapon_shockwave", 
+		Pickup_ShockWave,
 		Use_Weapon,
 		Drop_Weapon,
-		Weapon_Whirl,
+		Weapon_ShockWave,
 		"misc/w_pkup.wav",
 		"models/weapons/g_rail/tris.md2", EF_ROTATE,
 		"models/weapons/v_rail/tris.md2",
 		"w_railgun",					//icon
-		"Whirl",						//pickup
+		"ShockWave",						//pickup
 		0,
 		1,
 		"Slugs",
 		IT_WEAPON|IT_STAY_COOP,
-		WEAP_WHIRL,
+		WEAP_SHOCKWAVE,
 		NULL,
 		0,
 		""
 	},
 
-/*
+
 // =====================================================
 
-//	Disintegrate
+//	Korax's Fury
 
 // =====================================================
 
 	{
-		"weapon_disintegrate", 
-		Pickup_Weapon,
+		"weapon_koraxsfury",
+		Pickup_KoraxsFury,
 		Use_Weapon,
 		Drop_Weapon,
-		Weapon_Disintegrate,
+		Weapon_KoraxsFury,
 		"misc/w_pkup.wav",
-		"models/weapons/g_rail/tris.md2", EF_ROTATE,
-		"models/weapons/v_rail/tris.md2",
-		"w_railgun",				//icon
-		"Railgun",					//pickup
+		"models/weapons/g_bfg/tris.md2", EF_ROTATE,
+		"models/weapons/v_bfg/tris.md2",
+		"w_bfg",
+		"KoraxsFury",
 		0,
-		1,
-		"Slugs",
+		50,
+		"Cells",
 		IT_WEAPON|IT_STAY_COOP,
-		WEAP_RAILGUN,
+		WEAP_KORAXSFURY,
 		NULL,
 		0,
-		 "weapons/rg_hum.wav"
+		""
 	},
-*/
+
 // =========================================================================================================
 
 // End of Hexen Weapons
+
+// =========================================================================================================
+
+// =========================================================================================================
+
+// Hexen Items
+
+// =========================================================================================================
+
+
+
+// =========================================================================================================
+
+// End of Hexen Items
 
 // =========================================================================================================
 
@@ -1781,10 +1797,10 @@ always owned, never in the world
 
 /*QUAKED weapon_railgun (.3 .3 1) (-16 -16 -16) (16 16 16)
 */
-//Handles Whirl
+//Handles ShockWave
 	{
 		"weapon_railgun", 
-		Pickup_Weapon,
+		Pickup_ShockWave,
 		Use_Weapon,
 		Drop_Weapon,
 		Weapon_Railgun,
@@ -1792,12 +1808,12 @@ always owned, never in the world
 		"models/weapons/g_rail/tris.md2", EF_ROTATE,
 		"models/weapons/v_rail/tris.md2",
 		"w_railgun",					//icon
-		"Railgun",						//pickup
+		"ShockWave",						//pickup
 		0,
 		1,
 		"Slugs",
 		IT_WEAPON|IT_STAY_COOP,
-		WEAP_RAILGUN,
+		WEAP_SHOCKWAVE,
 		NULL,
 		0,
 		""
@@ -1805,25 +1821,26 @@ always owned, never in the world
 
 /*QUAKED weapon_bfg (.3 .3 1) (-16 -16 -16) (16 16 16)
 */
+	//Handles Korax's Fury
 	{
-		"weapon_bfg",
-		Pickup_Weapon,
+		"weapon_koraxsfury",
+		Pickup_KoraxsFury,
 		Use_Weapon,
 		Drop_Weapon,
 		Weapon_BFG,
 		"misc/w_pkup.wav",
 		"models/weapons/g_bfg/tris.md2", EF_ROTATE,
 		"models/weapons/v_bfg/tris.md2",
-/* icon */		"w_bfg",
-/* pickup */	"BFG10K",
+		"w_bfg",
+		"KoraxsFury",
 		0,
 		50,
 		"Cells",
 		IT_WEAPON|IT_STAY_COOP,
-		WEAP_BFG,
+		WEAP_KORAXSFURY,
 		NULL,
 		0,
-/* precache */ "sprites/s_bfg1.sp2 sprites/s_bfg2.sp2 sprites/s_bfg3.sp2 weapons/bfg__f1y.wav weapons/bfg__l1a.wav weapons/bfg__x1b.wav weapons/bfg_hum.wav"
+		""
 	},
 
 	//
